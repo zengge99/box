@@ -2,55 +2,48 @@ name: GENERATE APK
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write  # 必须添加这个权限才能推送代码
+    
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       
-      - name: Build With Gradle
+      - name: Build APK
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease --build-cache --parallel --daemon --warning-mode all
+          ./gradlew assembleRelease
       
-      - name: Find and Move APK
+      - name: Prepare APK Directory
         run: |
-          # 创建 apk 目录
           mkdir -p apk/
-          
-          # 查找并移动所有 APK 文件
           find . -name "*.apk" -exec cp {} apk/ \;
-          
-          # 显示移动后的文件
           ls -lh apk/
       
       - name: Commit and Push APK
         run: |
-          # 配置 Git
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          
-          # 添加 APK 文件
           git add apk/
           
-          # 检查是否有文件需要提交
           if git diff-index --quiet HEAD --; then
-            echo "No APK files to commit"
+            echo "No APK changes to commit"
           else
-            git commit -m "Auto-commit APK files [skip ci]"
+            git commit -m "Auto-update APK files [skip ci]"
             git push origin HEAD:main
           fi
       
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: apk-files
+          name: release-apk
           path: apk/*.apk
