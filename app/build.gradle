@@ -36,6 +36,7 @@ android {
     defaultConfig {
         applicationId 'tv.org.eu.bunnyabc'
         minSdkVersion 16
+        buildToolsVersion "30.0.3"
         //noinspection ExpiredTargetSdkVersion
         targetSdkVersion 26
         versionCode 18
