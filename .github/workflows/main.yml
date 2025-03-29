@@ -1,34 +1,49 @@
 name: GENERATE APK
 
 on:
-    push:
-      branches:
-        - main
-    pull_request:
-      branches:
-        - main
-        
-  # workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write  # 必须添加这个权限才能推送代码
+    
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Build With Gradle
+      
+      - name: Build APK
         run: |
           chmod +x gradlew
-          ./gradlew assemblerelease --build-cache --parallel --daemon --warning-mode all
-      - name: Prepare App
+          ./gradlew assembleRelease
+      
+      - name: Prepare APK Directory
         run: |
           mkdir -p apk/
-          for file in `find ~ -name "*.apk" -print`; do
-            mv "$file" apk/
-          done
-      - name: Upload App To Artifact
-        uses: actions/upload-artifact@v3
+          find . -name "*.apk" -exec cp {} apk/ \;
+          ls -lh apk/
+      
+      - name: Commit and Push APK
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add apk/
+          
+          if git diff-index --quiet HEAD --; then
+            echo "No APK changes to commit"
+          else
+            git commit -m "Auto-update APK files [skip ci]"
+            git push origin HEAD:main
+          fi
+      
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: box
-          path: apk/*
+          name: release-apk
+          path: apk/*.apk
